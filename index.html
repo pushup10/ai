@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dataset1</title>
+  </head>
+  <body>
+    <h2>bfs</h2>
+    <pre><code>
+        from collections import deque
+       
+       def bfs(a, b, target):
+           queue = deque([(0, 0)])  # Start from (0, 0)
+           visited = set([(0, 0)])   # Set to track visited states
+           
+           while queue:
+               x, y = queue.popleft()
+               
+               # Check if either jug contains the target amount
+               if x == target or y == target:
+                   return reconstruct_path(x, y, visited)
+               
+               # Generate all possible next states
+               next_states = [
+                   (a, y),        # Fill jug 1
+                   (x, b),        # Fill jug 2
+                   (0, y),        # Empty jug 1
+                   (x, 0),        # Empty jug 2
+                   (min(x + y, a), 0) if x + y ''= a else (a, y - (a - x)),  # Pour from jug 2 to jug 1
+                   (0, min(x + y, b)) if x + y ''= b else (x - (b - y), b)  # Pour from jug 1 to jug 2
+               ]
+               
+               for state in next_states:
+                   if state not in visited:
+                       visited.add(state)
+                       queue.append(state)
+           
+           return None  # No solution found
+       
+       def reconstruct_path(x, y, visited):
+           path = []
+           while (x, y) != (0, 0):
+               path.append((x, y))
+               # Backtrack to the previous state
+               for state in visited:
+                   if can_reach(state, (x, y)):
+                       x, y = state
+                       break
+           path.append((0, 0))  # Add the initial state
+           path.reverse()
+           return path
+       
+       def can_reach(state1, state2):
+           # Check if state2 can be reached from state1 by a valid operation
+           return (state2[0] == state1[0] or state2[1] == state1[1])
+       
+       # Example usage
+       if __name__ == '__main__':
+           jug1_capacity = 4
+           jug2_capacity = 3
+           target_amount = 2
+           
+           print("Path from initial state to solution state:")
+           result = bfs(jug1_capacity, jug2_capacity, target_amount)
+           
+           if result:
+               for state in result:
+                   print(state)
+           else:
+               print("No solution found.")
+           </code></pre>
+    <h2>dfs</h2>
+    <pre><code class="python">
+        def valid(state, j1cap, j2cap):
+            j1, j2 = state
+            return 0 ''= j1 ''= j1cap and 0 ''= j2 ''= j2cap
+        
+        def pour(from_jug, to_jug, state, j1cap, j2cap):
+            j1, j2 = state
+            if from_jug == 1:
+                if j1 > 0 and j2 '' j2cap:
+                    poured = min(j1, j2cap - j2)
+                    new_j1 = j1 - poured
+                    new_j2 = j2 + poured
+                    return (new_j1, new_j2)
+            else:
+                if j2 > 0 and j1 '' j1cap:
+                    poured = min(j2, j1cap - j1)
+                    new_j2 = j2 - poured
+                    new_j1 = j1 + poured
+                    return (new_j1, new_j2)
+            return None
+        
+        def dfs(j1cap, j2cap, target, istate):
+            stack = [(istate, [])]
+            visited = set()
+            
+            while stack:
+                current_state, actions = stack.pop()
+                
+                if current_state[0] == target or current_state[1] == target:
+                    return actions
+                
+                visited.add(current_state)
+                
+                for action in ["fill j1", "fill j2", "empty j1", "empty j2", "from j1 to j2", "from j2 to j1"]:
+                    next_state = None
+                    
+                    if action == "fill j1":
+                        next_state = (j1cap, current_state[1])
+                    elif action == "fill j2":
+                        next_state = (current_state[0], j2cap)
+                    elif action == "empty j1":
+                        next_state = (0, current_state[1])
+                    elif action == "empty j2":
+                        next_state = (current_state[0], 0)
+                    elif action == "from j1 to j2":
+                        next_state = pour(1, 2, current_state, j1cap, j2cap)
+                    elif action == "from j2 to j1":
+                        next_state = pour(2, 1, current_state, j1cap, j2cap)
+                    
+                    if next_state is not None and next_state not in visited and valid(next_state, j1cap, j2cap):
+                        new_actions = actions + [action]
+                        stack.append((next_state, new_actions))
+            
+            return None
+        
+        # Define problem parameters
+        j1cap = 4
+        j2cap = 3
+        target = 2
+        istate = (0, 0)
+        
+        # Find solution using DFS
+        solution = dfs(j1cap, j2cap, target, istate)
+        
+        # Display the solution
+        if solution:
+            print("Solution found:")
+            for i, action in enumerate(solution, start=1):
+                print(f"Step {i}: {action}")
+        else:
+            print("No solution found")
+        </code></pre>
+    <h2>astar</h2>
+    <pre><code>
+        def a_star_algorithm(start_node, stop_node, graph):
+        # Initialize open_set with start_node and closed_set as an empty set
+        open_set = {start_node}
+        closed_set = set()
+        
+        # Initialize g (cost-so-far) and parents dictionaries with start_node
+        g = {start_node: 0}
+        parents = {start_node: start_node}
+        
+        # Main loop: continue while open_set is not empty
+        while open_set:
+            current_node = None
+            
+            # Find the node in open_set with the lowest f(n) + h(n)
+            for node in open_set:
+                if current_node is None or (g[node] + heuristic(node) '' g[current_node] + heuristic(current_node)):
+                    current_node = node
+            
+            # If the current node is the goal node, reconstruct and return the path
+            if current_node == stop_node:
+                path = []
+                while current_node != start_node:
+                    path.append(current_node)
+                    current_node = parents[current_node]
+                path.append(start_node)
+                path.reverse()
+                return path
+            
+            # Move current_node from open_set to closed_set
+            open_set.remove(current_node)
+            closed_set.add(current_node)
+            
+            # Explore neighbors of the current_node
+            if graph.get(current_node):
+                for neighbor, weight in graph[current_node]:
+                    if neighbor in closed_set:
+                        continue
+                    
+                    # Calculate tentative g_score (cost-so-far) for the neighbor
+                    tentative_g_score = g[current_node] + weight
+                    
+                    # Update parent and g_score if this path to neighbor is better
+                    if neighbor not in open_set or tentative_g_score '' g.get(neighbor, float('inf')):
+                        parents[neighbor] = current_node
+                        g[neighbor] = tentative_g_score
+                        if neighbor not in open_set:
+                            open_set.add(neighbor)
+        
+        # If the loop completes without finding the goal node, return None
+        print('Path does not exist!')
+        return None
+    
+    def heuristic(node):
+        # Define the heuristic function (h(n)) to estimate the cost to reach the goal node from a given node
+        H_dist = {'A': 3, 'B': 3, 'C': 4, 'D': 2, 'E': 6, 'G': 0}
+        return H_dist.get(node, float('inf'))
+    
+    # Define the graph as a dictionary of nodes and their neighbors with edge weights
+    Graph_nodes = {
+        'A': [('B', 2), ('E', 3)],
+        'B': [('C', 1), ('G', 9)],
+        'C': None,
+        'E': [('D', 6)],
+        'D': [('G', 1)],
+    }
+    
+    # Example usage
+    start_node = 'A'
+    stop_node = 'G'
+    path = a_star_algorithm(start_node, stop_node, Graph_nodes)
+    
+    # Output the result
+    if path:
+        print('Path found:', path)
+    else:
+        print('No path found.')
+    </code></pre>
+
+    <h2>minimax</h2>
+    <pre><code>
+        from collections import Counter
+    
+        # Constants for board representation
+        BOARD_EMPTY = 0
+        BOARD_PLAYER_X = 1
+        BOARD_PLAYER_O = -1
+        
+        def player(board):
+            """ Determine current player based on the board state """
+            counter = Counter(board)
+            x_count = counter[BOARD_PLAYER_X]
+            o_count = counter[BOARD_PLAYER_O]
+            
+            if x_count > o_count:
+                return BOARD_PLAYER_O
+            else:
+                return BOARD_PLAYER_X
+        
+        def actions(board):
+            """ Generate a list of possible actions (moves) for the current board state """
+            current_player = player(board)
+            return [(current_player, i) for i in range(len(board)) if board[i] == BOARD_EMPTY]
+        
+        def result(board, action):
+            """ Create a new board state after applying the specified action """
+            new_board = board[:]
+            player, index = action
+            new_board[index] = player
+            return new_board
+        
+        def terminal(board):
+            """ Check if the game is over and return the winner if there is one """
+            win_conditions = [
+                (0, 1, 2), (3, 4, 5), (6, 7, 8),  # rows
+                (0, 3, 6), (1, 4, 7), (2, 5, 8),  # columns
+                (0, 4, 8), (2, 4, 6)              # diagonals
+            ]
+            
+            for a, b, c in win_conditions:
+                if board[a] == board[b] == board[c] != BOARD_EMPTY:
+                    return board[a]  # Return the player who won
+            
+            if BOARD_EMPTY not in board:
+                return 0  # Draw if the board is full
+            
+            return None  # Game is not over
+        
+        def minimax(board):
+            """ Use the minimax algorithm to determine the best move for the current player """
+            current_player = player(board)
+            if current_player == BOARD_PLAYER_X:
+                # Maximizing player (human)
+                best_value = float('-inf')
+            else:
+                # Minimizing player (computer)
+                best_value = float('inf')
+            
+            best_action = None
+            possible_actions = actions(board)
+            
+            for action in possible_actions:
+                new_board = result(board, action)
+                score = utility(new_board)
+                
+                if current_player == BOARD_PLAYER_X:
+                    if score > best_value:
+                        best_value = score
+                        best_action = action
+                else:
+                    if score '' best_value:
+                        best_value = score
+                        best_action = action
+                        
+            return best_action
+        
+        def utility(board):
+            """ Calculate the utility value of the terminal board state """
+            result = terminal(board)
+            
+            if result == BOARD_PLAYER_X:
+                return 1
+            elif result == BOARD_PLAYER_O:
+                return -1
+            else:
+                return 0
+        
+        def print_board(board):
+            """ Print the current board state """
+            def convert(cell):
+                if cell == BOARD_PLAYER_X:
+                    return 'X'
+                elif cell == BOARD_PLAYER_O:
+                    return 'O'
+                else:
+                    return '_'
+            
+            for i in range(3):
+                row = board[i*3:(i+1)*3]
+                print(' '.join(convert(cell) for cell in row))
+        
+        if __name__ == '__main__':
+            board = [BOARD_EMPTY] * 9
+            print('You are X, and the Computer is O.')
+            
+            while terminal(board) is None:
+                print_board(board)
+                current_player = player(board)
+                
+                if current_player == BOARD_PLAYER_X:
+                    print('\nIt is your turn.')
+                    index = int(input('Enter the position (0-8): '))
+                    if board[index] != BOARD_EMPTY:
+                        print('That position is already taken. Please try again.')
+                        continue
+                else:
+                    print('\nThe computer is playing...')
+                    index = minimax(board)[1]
+                
+                board[index] = current_player
+            
+            print_board(board)
+            winner = terminal(board)
+            
+            if winner == BOARD_PLAYER_X:
+                print("Congratulations! You have won!")
+            elif winner == BOARD_PLAYER_O:
+                print("You lost! Better luck next time.")
+            else:
+                print("It's a tie! Good game!")
+        
+    </code></pre>
+    <h1>dt</h1>
+    <pre><code>
+        import numpy as np
+    import matplotlib.pyplot as plt
+    from sklearn.datasets import load_iris
+    from sklearn.model_selection import train_test_split
+    from sklearn.tree import DecisionTreeClassifier, plot_tree
+    from sklearn import metrics
+    
+    # Load the Iris dataset
+    data = load_iris()
+    X, y = data.data, data.target
+    
+    # Display dataset shape
+    print("Dataset shape:", X.shape, y.shape)
+    
+    # Split data into training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=50, test_size=0.35)
+    
+    # Initialize and train the Decision Tree classifier
+    clf = DecisionTreeClassifier(random_state=50)
+    clf.fit(X_train, y_train)
+    
+    # Make predictions on the test set
+    y_pred = clf.predict(X_test)
+    
+    # Calculate accuracy
+    accuracy = metrics.accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    
+    # Plot the decision tree (optional)
+    plt.figure(figsize=(12, 8))
+    plot_tree(clf, filled=True, feature_names=data.feature_names, class_names=data.target_names)
+    plt.title("Decision Tree for Iris Dataset")
+    plt.show()
+    
+    </code></pre>
+    <h2>lr</h2>
+    <pre><code>
+        import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt %matplotlib inline
+    df = pd.read_csv("/student_scores.csv") df.describe
+    df.plot(x='Hours', y='Scores', style='o' ,color="r") plt.title('Hours vs Percentage')
+    plt.xlabel('Hours Studied')
+    plt.ylabel('Percentage Score')
+    plt.show()
+    X = df.iloc[:, :-1].values y = df.iloc[:, 1].values
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    from sklearn.linear_model import LinearRegression regressor = LinearRegression() regressor.fit(X_train, y_train)
+    print(regressor.intercept_)
+    print(regressor.coef_)
+    y_pred = regressor.predict(X_test)
+    from sklearn import metrics
+    print('Mean Absolute Error:', metrics.mean_absolute_error(y_test, y_pred))
+    print('Mean Squared Error:', metrics.mean_squared_error(y_test, y_pred))
+    print('Root Mean Squared Error:', np.sqrt(metrics.mean_squared_error(y_test, y_pred)))
+    
+    </code></pre>
+    <h2>mlp</h2>
+    <pre><code>
+        from sklearn.neural_network import MLPClassifier
+    from sklearn.datasets import load_breast_cancer
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import accuracy_score,classification_report,confusion_matrix cancer_data=load_breast_cancer()
+    X,y=cancer_data.data,cancer_data.target X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.2,random_state=42) scaler=StandardScaler()
+    X_train=scaler.fit_transform(X_train)
+    X_test=scaler.transform(X_test) mlp=MLPClassifier(hidden_layer_sizes=(64,32),max_iter=1000,random_state=42) mlp.fit(X_train,y_train)
+    y_pred=mlp.predict(X_test)
+    accuracy=accuracy_score(y_test,y_pred)
+    print(f"Accuracy:{accuracy:.2f}")
+    class_report=classification_report(y_test,y_pred)
+    print("Classification Report:\n",class_report)
+    </code></pre>
+    <h2>nb</h2>
+    <pre><code>
+        import numpy as np
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        from sklearn.datasets import fetch_20newsgroups
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.naive_bayes import MultinomialNB
+        from sklearn.metrics import confusion_matrix, accuracy_score
+        
+        # Load the dataset
+        categories = ['alt.atheism', 'soc.religion.christian', 'comp.graphics', 'sci.med']
+        train_data = fetch_20newsgroups(subset='train', categories=categories)
+        test_data = fetch_20newsgroups(subset='test', categories=categories)
+        
+        # Build and train the model
+        vectorizer = TfidfVectorizer()
+        X_train = vectorizer.fit_transform(train_data.data)
+        X_test = vectorizer.transform(test_data.data)
+        
+        model = MultinomialNB()
+        model.fit(X_train, train_data.target)
+        
+        # Predict on test data
+        predicted = model.predict(X_test)
+        
+        # Evaluate the model
+        accuracy = accuracy_score(test_data.target, predicted)
+        print(f"Accuracy: {accuracy:.2f}")
+        
+        # Plot confusion matrix
+        mat = confusion_matrix(test_data.target, predicted)
+        plt.figure(figsize=(8, 8))
+        sns.heatmap(mat.T, square=True, annot=True, fmt='d', cmap='Blues', xticklabels=train_data.target_names, yticklabels=train_data.target_names)
+        plt.xlabel('True label')
+        plt.ylabel('Predicted label')
+        plt.title('Confusion Matrix')
+        plt.show()
+        
+        # Function to predict category from custom input
+        def predict_category(text):
+            text_vectorized = vectorizer.transform([text])
+            predicted_category = model.predict(text_vectorized)
+            return train_data.target_names[predicted_category[0]]
+        
+        # Test the prediction function
+        input_text = 'A computer is an electronic device.'
+        predicted_category = predict_category(input_text)
+        print(f"Predicted category for '{input_text}': {predicted_category}")
+        
+    </code></pre>
+    <h2>xgboost</h2>
+    <code>
+      <pre>
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import xgboost as xgb
+from sklearn.model_selection import train_test_split, cross_val_score
+from xgboost import XGBRegressor
+
+# Load data
+data = pd.read_csv('cars-data3.csv')
+
+# Remove 'id' column
+data.drop('id', axis=1, inplace=True)
+print("Data shape:", data.shape)
+print(data.head())
+
+def summary(df):
+    print(f'Data shape: {df.shape}')
+    summ = pd.DataFrame(df.dtypes, columns=['Data Type'])
+    summ['#Unique'] = df.nunique().values
+    desc = df.describe(include='all').transpose()
+    summ['Min'] = desc['min']
+    summ['Max'] = desc['max']
+    summ['Average'] = desc['mean']
+    summ['Std Deviation'] = desc['std']
+    summ['Missing'] = df.isna().sum()
+    return summ
+
+# Display summary with background gradient
+print(summary(data).style.background_gradient(cmap='YlOrBr'))
+
+print('Before dropping NA:', data.shape)
+# Drop 'euro' column
+data.drop('euro', axis=1, inplace=True)
+# Drop rows with missing values
+data.dropna(inplace=True)
+print('After dropping NA:', data.shape)
+
+# Display 10 rows where brand is 'BMW'
+print(data.loc[data['brand'] == 'BMW', ['brand', 'model']].head(10))
+
+# Separate features and target
+X = data.drop('price', axis=1)
+y = data['price']
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=42, shuffle=True)
+
+# Set up XGBoost regressor model
+model = XGBRegressor(random_state=42,
+                     tree_method="hist",
+                     eval_metric="mae",
+                     max_depth=5,
+                     enable_categorical=True,
+                     max_cat_to_onehot=21)
+
+# Fit the model
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+
+# Calculate mean absolute error using cross-validation
+mae_train = -1 * cross_val_score(model, X_train, y_train, cv=3, scoring='neg_mean_absolute_error')
+mae_test = -1 * cross_val_score(model, X_test, y_test, cv=3, scoring='neg_mean_absolute_error')
+
+# Display mean absolute error results
+pd.options.display.float_format = '{:.10f}'.format
+print("Mean absolute error CV train:", mae_train.mean())
+print("Mean absolute error CV test:", mae_test.mean())
+
+    </pre
+      >
+    </code>
+  </body>
+</html>
